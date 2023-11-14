@@ -1,42 +1,93 @@
 #include "main.h"
+#include <stdarg.h>
+#include <unistd.h>
 
 /**
- * get_precision - Calculates the precision for printing
- * @format: Formatted string in which to print the arguments
- * @i: List of arguments to be printed.
- * @list: list of arguments.
- * Return: Precision.
+ * _printf - Produces output according to a format.
+ * @format: The format string.
+ * @...: Variable number of arguments.
+ *
+ * Return: The number of characters printed (excluding the null byte).
  */
-
-int get_precision(const char *format, int *i, va_list list)
-
+int _printf(const char *format, ...)
 {
-	int curr_i = *i + 1;
-	int precision = -1;
+    va_list args;
+    int count = 0;
+    int precision = -1; // Initialize precision to -1 (undefined)
 
-	if (format[curr_i] != '.')
-		return (precision);
+    va_start(args, format);
 
-	precision = 0;
+    while (*format)
+    {
+        if (*format == '%' && *(format + 1))
+        {
+            if (*(format + 1) == '.')
+            {
+                // Handle precision
+                precision = 0;
+                format += 2;
+                while (*format >= '0' && *format <= '9')
+                {
+                    precision = precision * 10 + (*format - '0');
+                    format++;
+                }
+            }
 
-	for (curr_i += 1; format[curr_i] != '\0'; curr_i++)
-	{
-		if (is_digit(format[curr_i]))
-		{
-			precision *= 10;
-			precision += format[curr_i] - '0';
-		}
-		else if (format[curr_i] == '*')
-		{
-			curr_i++;
-			precision = va_arg(list, int);
-			break;
-		}
-		else
-			break;
-	}
+            switch (*(format + 1))
+            {
+            case 'c':
+                count += write(1, &va_arg(args, int), 1);
+                break;
+            case 's':
+                {
+                    char *str = va_arg(args, char *);
+                    if (precision >= 0)
+                    {
+                        while (*str && precision-- > 0)
+                        {
+                            count += write(1, str++, 1);
+                        }
+                    }
+                    else
+                    {
+                        count += write(1, str, _strlen(str));
+                    }
+                }
+                break;
+            case '%':
+                count += write(1, "%", 1);
+                break;
+            default:
+                count += write(1, "%", 1);
+                count += write(1, &(*(format + 1)), 1);
+            }
+            precision = -1; // Reset precision to -1 after use
+            format += 2;
+        }
+        else
+        {
+            count += write(1, format, 1);
+            format++;
+        }
+    }
 
-	*i = curr_i - 1;
+    va_end(args);
+    return count;
+}
 
-	return (precision);
+/**
+ * _strlen - Computes the length of a string.
+ * @str: The string.
+ *
+ * Return: The length of the string.
+ */
+int _strlen(const char *str)
+{
+    int len = 0;
+    while (*str)
+    {
+        len++;
+        str++;
+    }
+    return len;
 }
